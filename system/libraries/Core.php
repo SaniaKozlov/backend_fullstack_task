@@ -29,6 +29,8 @@ class CI_Core {
     const RESPONSE_GENERIC_DISABLED = 'disabled'; // Фунционал отключен или временно не доступен - через сеттинги выключили
     const RESPONSE_GENERIC_NO_ACCESS = 'no_access'; // зарос должен быть только через AJAX
     const RESPONSE_GENERIC_WRONG_PARAMS = 'wrong_params'; // Входящие данные не правлиьные.
+    const RESPONSE_GENERIC_NO_BALANCE = 'no_balance'; // Входящие данные не правлиьные.
+    const RESPONSE_GENERIC_NO_LIKES = 'no_likes'; // Входящие данные не правлиьные.
     const RESPONSE_GENERIC_UNAVAILABLE = 'unavailable'; // временное или постоянное недоступное действие ( в основном относиться к кейсопену )
 
     const RESPONSE_GENERIC_TRY_LATER = 'try_later'; // action was done before. 2nd time dont need to ask :)

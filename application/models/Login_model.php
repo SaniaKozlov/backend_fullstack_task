@@ -2,10 +2,9 @@
 
 namespace Model;
 use App;
-use CI_Model;
 use CriticalException;
 
-class Login_model extends CI_Model {
+class Login_model {
 
     public function __construct()
     {

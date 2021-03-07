@@ -10,7 +10,7 @@ use CI_Emerald_Model;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Boosterpack_model extends CI_Emerald_Model {
+class Boosterpack_model extends CI_Emerald_Model implements Buyable {
     const CLASS_TABLE = 'boosterpack';
 
 
@@ -100,6 +100,11 @@ class Boosterpack_model extends CI_Emerald_Model {
         return $this->save('time_updated', $time_updated);
     }
 
+    public function getMaxProfit()
+    {
+        return $this->get_price() + $this->get_bank();
+    }
+
     function __construct($id = NULL)
     {
         parent::__construct();
@@ -125,6 +130,19 @@ class Boosterpack_model extends CI_Emerald_Model {
         $this->is_loaded(TRUE);
         App::get_ci()->s->from(self::CLASS_TABLE)->where(['id' => $this->get_id()])->delete()->execute();
         return (App::get_ci()->s->get_affected_rows() > 0);
+    }
+
+    public function update_boosterpack_bank($profit)
+    {
+        $this->save('bank', $this->get_bank() + $profit);
+    }
+
+    public static function buy_pack(Boosterpack_model $boosterpack)
+    {
+        $lickes = rand(1, $boosterpack->getMaxProfit());
+        $boosterpack->update_boosterpack_bank($boosterpack->get_price() - $lickes);
+
+        return $lickes;
     }
 
 }

@@ -190,6 +190,7 @@ class CI_Trackback {
 	 */
 	public function receive()
 	{
+	    var_dump('fuck!');die;
 		foreach (array('url', 'title', 'blog_name', 'excerpt') as $val)
 		{
 			if (empty($_POST[$val]))
