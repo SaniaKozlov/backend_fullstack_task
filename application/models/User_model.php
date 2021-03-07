@@ -32,6 +32,8 @@ class User_model extends CI_Emerald_Model {
     /** @var float */
     protected $wallet_balance;
     /** @var float */
+    protected $likes_balance;
+    /** @var float */
     protected $wallet_total_refilled;
     /** @var float */
     protected $wallet_total_withdrawn;
@@ -160,6 +162,25 @@ class User_model extends CI_Emerald_Model {
     /**
      * @return float
      */
+    public function get_likes_balance(): float
+    {
+        return $this->likes_balance;
+    }
+
+    /**
+     * @param float $likes_balance
+     *
+     * @return bool
+     */
+    public function set_likes_balance(float $likes_balance)
+    {
+        $this->likes_balance = $likes_balance;
+        return $this->save('likes_balance', $likes_balance);
+    }
+
+    /**
+     * @return float
+     */
     public function get_wallet_total_refilled(): float
     {
         return $this->wallet_total_refilled;
@@ -240,6 +261,13 @@ class User_model extends CI_Emerald_Model {
         $this->set_id($id);
     }
 
+    public function update(array $data)
+    {
+        return App::get_ci()->s->from(self::CLASS_TABLE)
+            ->where('id', $this->get_id())
+            ->update($data)->execute();
+    }
+
     public function reload(bool $for_update = FALSE)
     {
         parent::reload($for_update);
@@ -316,6 +344,18 @@ class User_model extends CI_Emerald_Model {
         }
     }
 
+    public static function get_user_by_email(string $login): ?User_model
+    {
+        $data = App::get_ci()->s->from(self::CLASS_TABLE)
+            ->where('email', $login)->one();
+        if ($data) {
+            return (new self())->set($data);
+        }
+
+        return null;
+
+    }
+
 
 
     /**
@@ -335,6 +375,76 @@ class User_model extends CI_Emerald_Model {
             default:
                 throw new Exception('undefined preparation type');
         }
+    }
+
+    public static function refill_balance($amount)
+    {
+        $user = new static(self::get_session_id());
+
+        if ($user) {
+            $user->update([
+                'wallet_balance' => ($new_balance = $user->get_wallet_balance() + $amount),
+                'wallet_total_refilled' => $user->get_wallet_total_refilled() + $amount,
+            ]);
+        }
+
+        return $new_balance??0;
+    }
+
+    public static function withdraw_balance($amount)
+    {
+        $user = new User_model(User_model::get_session_id());
+        $user->check_money_balance($amount);
+        if ($user) {
+            $user->update([
+                'wallet_balance' => ($new_balance = $user->get_wallet_balance() - $amount),
+                'wallet_total_withdrawn' => $user->get_wallet_total_withdrawn() + $amount,
+            ]);
+        }
+
+        return $new_balance ?? 0;
+    }
+
+    public static function refill_likes($sum)
+    {
+        $user = new User_model(User_model::get_session_id());
+        $user->set_likes_balance($likes = $user->get_likes_balance() + $sum);
+
+        return $likes;
+    }
+
+    public static function withdraw_likes($sum)
+    {
+        $user = new User_model(User_model::get_session_id());
+        $user->check_likes_balance();
+        $user->set_likes_balance($user->get_likes_balance() - $sum);
+    }
+
+    public function check_money_balance($amount = 1)
+    {
+        $checked = App::get_ci()->s->from(self::CLASS_TABLE)
+            ->where('id', $this->get_id())
+            ->where('wallet_balance >=', $amount)
+            ->one();
+
+        if (!$checked) {
+            throw new Exception('no balance!');
+        }
+
+        return true;
+    }
+
+    public function check_likes_balance($amount = 1)
+    {
+        $checked = App::get_ci()->s->from(self::CLASS_TABLE)
+            ->where('id', self::get_session_id())
+            ->where('likes_balance >=', $amount)
+            ->one();
+        if (!$checked) {
+            throw new Exception('no likes!');
+        }
+
+        return true;
     }
 
     /**

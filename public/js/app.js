@@ -1,3 +1,27 @@
+
+
+// define the item component
+Vue.component('item', {
+	template: '#item-template',
+	props: {
+		model: Object
+	},
+	data: function () {
+		return {
+			open: false
+		}
+	},
+	methods: {
+		addLike(id) {
+			this.$parent.addLike(id, 'comment');
+		},
+		showForm(id) {
+			this.$parent.showForm(id);
+		}
+	}
+})
+
+
 var app = new Vue({
 	el: '#app',
 	data: {
@@ -7,10 +31,14 @@ var app = new Vue({
 		invalidLogin: false,
 		invalidPass: false,
 		invalidSum: false,
+		showComment: false,
+		comment: {
+			message: '',
+			parent: null
+		},
 		posts: [],
 		addSum: 0,
 		amount: 0,
-		likes: 0,
 		commentText: '',
 		packs: [
 			{
@@ -42,6 +70,10 @@ var app = new Vue({
 			})
 	},
 	methods: {
+		bus: function (data) {
+			console.log(data)
+			this.message = 'You right-clicked on ' + data.name
+		},
 		logout: function () {
 			console.log ('logout');
 		},
@@ -98,12 +130,12 @@ var app = new Vue({
 					}
 				})
 		},
-		addLike: function (id) {
+		addLike: function (id, type) {
 			var self= this;
 			axios
-				.get('/main_page/like')
+				.get('/main_page/like/'+id+'/'+type)
 				.then(function (response) {
-					self.likes = response.data.likes;
+					self.post.likes++;
 				})
 
 		},
@@ -120,6 +152,21 @@ var app = new Vue({
 						}, 500);
 					}
 				})
+		},
+		commentPost: function (id) {
+			var self = this;
+			axios.get('/main_page/comment/'+id+'/'+self.comment.message+'/'+self.comment.parent)
+				.then(function (response) {
+					self.post.comments.push(self.comment);
+					self.comment = {message: '', parent: null}
+				});
+		},
+		showForm: function (id) {
+			if (!this.showComment) {
+				this.showComment = !this.showComment;
+			}
+
+			this.comment.parent = id;
 		}
 	}
 });

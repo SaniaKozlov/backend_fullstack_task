@@ -13,7 +13,8 @@ use Model\User_model;
   <title>Test Task</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
         integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  <link rel="stylesheet" href="/css/app.css?v=<?= filemtime(FCPATH . '/css/app.css') ?>">
+    <link rel="stylesheet"  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/app.css?v=<?= filemtime(FCPATH . '/css/app.css') ?>">
   <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 </head>
 <body>
@@ -164,7 +165,7 @@ use Model\User_model;
           <div class="card mb-3">
             <div class="post-img" v-bind:style="{ backgroundImage: 'url(' + post.img + ')' }"></div>
             <div class="card-body">
-              <div class="likes" @click="addLike(post.id)">
+              <div class="likes" @click="addLike(post.id, 'post')">
                 <div class="heart-wrap" v-if="!likes">
                   <div class="heart">
                     <svg class="bi bi-heart" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -182,13 +183,17 @@ use Model\User_model;
                   <span>{{likes}}</span>
                 </div>
               </div>
-              <p class="card-text" v-for="comment in post.coments"> {{comment.user.personaname + ' - '}}<small class="text-muted">{{comment.text}}</small></p>
-              <form class="form-inline">
-                <div class="form-group">
-                  <input type="text" class="form-control" id="addComment" v-model="commentText">
-                </div>
-                <button type="submit" class="btn btn-primary">Add comment</button>
+                <item v-for="comment in post.coments" :model="comment"  @bus="bus" class="item"></item>
+
+              <form v-if="showComment" class="form-inline">
+                  <input type="hidden" v-model="comment.parent">
+                  <div class="form-group">
+                      <input type="text" class="form-control" id="addComment" v-model="comment.message">
+                  </div>
+
+                <button class="btn btn-primary float-right" @click="commentPost(post.id)">Add comment</button>
               </form>
+                <button v-if="!showComment" class="btn btn-primary" @click="showForm(null)">Add comment</button>
             </div>
           </div>
         </div>
@@ -257,8 +262,17 @@ use Model\User_model;
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
         integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
         crossorigin="anonymous"></script>
+<!-- item template -->
+<script type="text/x-template" id="item-template">
+    <p class="card-text"> {{model.user.personaname + ' - '}}
+        <small class="text-muted">{{model.text}}</small>
+        <i class="fa fa-heart" @click="addLike(model.id)" v-on:click="model.likes++"></i> <span v-if="model.likes">{{model.likes}}</span>
+        <i class="fa fa-comments" @click="showForm(model.id)"></i>
+        <item v-for="child in model.children" :model="child"  @bus="bus" class="sub-item"></item>
+
+    </p>
+</script>
 <script src="/js/app.js?v=<?= filemtime(FCPATH . '/js/app.js') ?>"></script>
 </body>
 </html>
-
 

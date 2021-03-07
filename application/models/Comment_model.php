@@ -1,12 +1,16 @@
 <?php
+namespace Model;
 
+use CI_Emerald_Model;
+use stdClass;
+use App;
 /**
  * Created by PhpStorm.
  * User: mr.incognito
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Comment_model extends CI_Emerald_Model
+class Comment_model extends CI_Emerald_Model implements LikedInterface
 {
     const CLASS_TABLE = 'comment';
 
@@ -126,22 +130,17 @@ class Comment_model extends CI_Emerald_Model
         return $this->save('time_updated', $time_updated);
     }
 
-    // generated
-
-    /**
-     * @return mixed
-     */
-    public function get_likes()
-    {
-        return $this->likes;
-    }
-
     /**
      * @return mixed
      */
     public function get_comments()
     {
         return $this->comments;
+    }
+
+    public static function get($id)
+    {
+        return App::get_ci()->s->from(static::CLASS_TABLE)->find($id);
     }
 
     /**
@@ -195,7 +194,11 @@ class Comment_model extends CI_Emerald_Model
     public static function get_all_by_assign_id(int $assting_id)
     {
 
-        $data = App::get_ci()->s->from(self::CLASS_TABLE)->where(['assign_id' => $assting_id])->orderBy('time_created','ASC')->many();
+        $data = App::get_ci()->s->from(self::CLASS_TABLE)
+            ->where(['assign_id' => $assting_id])
+            ->orderBy('time_created','ASC')
+            ->orderBy('parent_id','ASC')
+            ->many();
         $ret = [];
         foreach ($data as $i)
         {
@@ -215,10 +218,15 @@ class Comment_model extends CI_Emerald_Model
         switch ($preparation)
         {
             case 'full_info':
-                return self::_preparation_full_info($data);
+                return self::_preparation_full_info(self::buildTree($data));
             default:
                 throw new Exception('undefined preparation type');
         }
+    }
+
+    public function get_likes()
+    {
+        return Like_model::get_likes_count($this);
     }
 
 
@@ -231,23 +239,48 @@ class Comment_model extends CI_Emerald_Model
         $ret = [];
 
         foreach ($data as $d){
-            $o = new stdClass();
-
-            $o->id = $d->get_id();
-            $o->text = $d->get_text();
-
-            $o->user = User_model::preparation($d->get_user(),'main_page');
-
-            $o->likes = rand(0, 25);
-
-            $o->time_created = $d->get_time_created();
-            $o->time_updated = $d->get_time_updated();
-
-            $ret[] = $o;
+            $ret[] = self::_transform($d);
         }
 
 
         return $ret;
+    }
+
+    private static function buildTree(array &$elements, $parentId = null) {
+        $branch = [];
+
+        foreach ($elements as $key => $element) {
+            if ($element->parent_id === $parentId) {
+                $children = self::buildTree($elements, $element->get_id());
+                if ($children) {
+                    $element->children = $children;
+                }
+                $branch[$element->get_id()] = $element;
+                unset($elements[$key]);
+            }
+        }
+        return $branch;
+    }
+
+    private static function _transform($item)
+    {
+        $o = new stdClass();
+
+        $o->id = $item->get_id();
+        $o->text = $item->get_text();
+
+        $o->user = User_model::preparation($item->get_user(),'main_page');
+
+        $o->likes = $item->get_likes();
+
+        $o->time_created = $item->get_time_created();
+        $o->time_updated = $item->get_time_updated();
+        $o->children = [];
+        foreach ($item->children??[] as $child) {
+            $o->children[] = self::_transform($child);
+        }
+
+        return $o;
     }
 
 

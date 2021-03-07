@@ -3,7 +3,6 @@
 namespace Model;
 use App;
 use CI_Emerald_Model;
-use Comment_model;
 use Exception;
 use stdClass;
 
@@ -13,7 +12,7 @@ use stdClass;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Post_model extends CI_Emerald_Model {
+class Post_model extends CI_Emerald_Model implements LikedInterface {
     const CLASS_TABLE = 'post';
 
 
@@ -133,12 +132,14 @@ class Post_model extends CI_Emerald_Model {
 
     // generated
 
-    /**
-     * @return mixed
-     */
+    public static function get($id)
+    {
+        return App::get_ci()->s->from(static::CLASS_TABLE)->find($id);
+    }
+
     public function get_likes()
     {
-        return $this->likes;
+        return Like_model::get_likes_count($this);
     }
 
     /**
@@ -202,8 +203,8 @@ class Post_model extends CI_Emerald_Model {
         return (App::get_ci()->s->get_affected_rows() > 0);
     }
 
-    public function comment(){
-
+    public function comment($data){
+        Comment_model::create($data);
     }
 
     /**
@@ -240,6 +241,8 @@ class Post_model extends CI_Emerald_Model {
                 throw new Exception('undefined preparation type');
         }
     }
+
+
 
     /**
      * @param Post_model[] $data
@@ -289,7 +292,7 @@ class Post_model extends CI_Emerald_Model {
         $o->user = User_model::preparation($data->get_user(), 'main_page');
         $o->coments = Comment_model::preparation($data->get_comments(), 'full_info');
 
-        $o->likes = rand(0, 25);
+        $o->likes = $data->get_likes();
 
 
         $o->time_created = $data->get_time_created();
